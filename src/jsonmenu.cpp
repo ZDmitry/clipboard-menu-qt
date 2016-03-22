@@ -18,7 +18,10 @@
 #include <QDebug>
 
 
-#define MSEC 1000
+#define MSEC          1000
+
+#define DEF_TIMEOUT  (5 * MSEC)
+#define MIN_TIMEOUT  100
 
 
 JsonMenu::JsonMenu(QObject *parent)
@@ -31,7 +34,7 @@ JsonMenu::JsonMenu(QObject *parent)
     connect(m_timer, SIGNAL(timeout()), this, SLOT(clearClipboard()));
 
     m_cfg["secure"]  = true;
-    m_cfg["timeout"] = 5 * MSEC;
+    m_cfg["timeout"] = DEF_TIMEOUT;
 }
 
 JsonMenu::~JsonMenu()
@@ -146,7 +149,6 @@ bool JsonMenu::buildConfig(const QJsonObject& object)
             if (pref.type() == QVariant::String) {
                 pref.setValue(value.toString());
             }
-            qDebug() << pref;
         }
     }
     return true;
@@ -192,10 +194,6 @@ QString JsonMenu::getErrorLine(const QByteArray& data, long offset, long& line)
 
 void JsonMenu::clearClipboard()
 {
-    if (m_elapsed){
-        qDebug() << "[T] Elapsed = " << m_elapsed->elapsed();
-    }
-
     QClipboard* clipboard = QApplication::clipboard();
     if (!!clipboard) {
         clipboard->clear();
@@ -206,10 +204,15 @@ void JsonMenu::copyClipboard()
 {
     if (m_elapsed) delete m_elapsed;
 
-    m_elapsed = new QTime();
-    m_elapsed->start();
+    bool secure  = m_cfg["secure"].toBool();
+    int  timeout = m_cfg["timeout"].toInt();
 
-    m_timer->start(5 * MSEC); // clear text after 5 sec
+    if (secure) {
+        m_elapsed = new QTime();
+        m_elapsed->start();
+    }
+
+    m_timer->start(timeout > MIN_TIMEOUT ? timeout : DEF_TIMEOUT);
 
     QClipboard* clipboard = QApplication::clipboard();
     QAction* action = qobject_cast<QAction*>(sender());
