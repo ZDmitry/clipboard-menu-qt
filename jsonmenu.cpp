@@ -45,7 +45,7 @@ QMenu* JsonMenu::build(const QString& menuFile)
     m_trayMenu = new QMenu();
 
     QFile jsonFile(menuFile);
-    if (!jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QByteArray jsonBytes  = jsonFile.readAll();
         QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes);
         QJsonObject jsonRoot  = jsonDoc.object();
