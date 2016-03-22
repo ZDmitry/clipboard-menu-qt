@@ -1,6 +1,8 @@
 #include <QApplication>
 
 #include <QSystemTrayIcon>
+#include <QFileInfo>
+#include <QDir>
 
 #include "jsonmenu.h"
 
@@ -8,6 +10,10 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    // hideDockIcon();
+
+    QString appPath = QFileInfo(argv[0]).absolutePath();
+    QDir::setCurrent(appPath);
 
     QIcon trayIcon(":/images/clipboard.png");
     QSystemTrayIcon systray(trayIcon);

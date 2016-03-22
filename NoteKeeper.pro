@@ -5,7 +5,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = NoteKeeper
 TEMPLATE = app
 
-
 SOURCES += \
     main.cpp \
     jsonmenu.cpp
@@ -19,3 +18,6 @@ RESOURCES += \
 DISTFILES += \
     menu.json
 
+mac {
+    QMAKE_INFO_PLIST  += $$PWD/Info.plist
+}
