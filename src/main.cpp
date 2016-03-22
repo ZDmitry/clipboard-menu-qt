@@ -16,11 +16,12 @@ int main(int argc, char *argv[])
     QDir::setCurrent(appPath);
 
     QIcon trayIcon(":/images/clipboard.png");
-    QSystemTrayIcon systray(trayIcon);
+    app.setWindowIcon(trayIcon);
 
     JsonMenu menu;
-    QMenu* trayMenu = menu.build("menu.json");
+    QMenu* trayMenu = menu.parse("menu.json");
 
+    QSystemTrayIcon systray(trayIcon);
     systray.setContextMenu(trayMenu);
     systray.show();
 

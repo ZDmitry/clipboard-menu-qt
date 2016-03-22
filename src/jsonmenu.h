@@ -14,8 +14,8 @@ public:
     JsonMenu(QObject *parent = 0);
     ~JsonMenu();
 
-    QMenu*   build(const QString& menuFile);
-    QMenu*   build(QMenu* parent, const QJsonObject& object);
+    QMenu*   parse(const QString& menuFile);
+    QMenu*   parse(QMenu* parent, const QJsonObject& object);
 
 protected:
     void     addQuit();
@@ -25,12 +25,16 @@ protected slots:
     void     copyClipboard();
     void     clearClipboard();
 
+protected:
+    bool     buildMenu(QMenu* parent, const QJsonObject& object);
+    bool     buildConfig(const QJsonObject& object);
 
 private:
     QMenu*   m_trayMenu;
     QTimer*  m_timer;
     QTime*   m_elapsed;
 
+    QVariantMap        m_cfg;
     QCoreApplication*  m_app;
 };
 

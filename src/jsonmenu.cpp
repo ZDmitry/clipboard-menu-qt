@@ -29,6 +29,9 @@ JsonMenu::JsonMenu(QObject *parent)
 
     m_app = QApplication::instance();
     connect(m_timer, SIGNAL(timeout()), this, SLOT(clearClipboard()));
+
+    m_cfg["secure"]  = true;
+    m_cfg["timeout"] = 5 * MSEC;
 }
 
 JsonMenu::~JsonMenu()
@@ -37,7 +40,7 @@ JsonMenu::~JsonMenu()
     if (m_elapsed)  delete m_elapsed;
 }
 
-QMenu* JsonMenu::build(const QString& menuFile)
+QMenu* JsonMenu::parse(const QString& menuFile)
 {
     if (m_trayMenu) {
         delete m_trayMenu;
@@ -54,17 +57,20 @@ QMenu* JsonMenu::build(const QString& menuFile)
 
         if (parseError.error == QJsonParseError::NoError) {
             QJsonObject jsonRoot = jsonDoc.object();
-            build(m_trayMenu, jsonRoot);
+            parse(m_trayMenu, jsonRoot);
         } else {
             long lines;
 
             QString errline = getErrorLine(jsonBytes, parseError.offset, lines);
             QString errmsg  = parseError.errorString();
+            QString appName = m_app->applicationName();
 
             errline = errline.trimmed();
-            QString errMsg = QString("%1\nLine %2 - %3").arg(errline).arg(lines).arg(errmsg);
 
-            QMessageBox::warning(NULL, tr("Parse Error"), errMsg);
+            QString errMsg   = QString("%1\nLine %2 - %3").arg(errline).arg(lines).arg(errmsg);
+            QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Parse Error"));
+
+            QMessageBox::warning(NULL, errTitle, errMsg);
         }
     }
 
@@ -72,18 +78,42 @@ QMenu* JsonMenu::build(const QString& menuFile)
     return m_trayMenu;
 }
 
-QMenu* JsonMenu::build(QMenu* parent, const QJsonObject& object)
+QMenu* JsonMenu::parse(QMenu* parent, const QJsonObject& object)
 {
     if (!parent) return NULL;
 
+    bool menuExist = false;
+    bool confExist = false;
+
     for (QJsonObject::const_iterator it = object.begin(); it != object.end(); ++it) {
         QJsonValue value = it.value();
+        QString    key   = it.key();
+
+        if (!menuExist && value.isObject() && key == "menu") {
+            menuExist = buildMenu(parent, value.toObject());
+        }
+
+        if (!confExist && value.isObject() && key == "settings") {
+            confExist = buildConfig(value.toObject());
+        }
+    }
+
+    return parent;
+}
+
+bool  JsonMenu::buildMenu(QMenu* parent, const QJsonObject& object)
+{
+    if (!parent) return false;
+
+    for (QJsonObject::const_iterator it = object.begin(); it != object.end(); ++it) {
+        QJsonValue value = it.value();
+        QString    key   = it.key();
 
         if (value.isObject()) {
-           QMenu* child = parent->addMenu(it.key());
-           build(child, value.toObject());
+           QMenu* child = parent->addMenu(key);
+           buildMenu(child, value.toObject());
         } else if (value.isString()) {
-            QAction* action = new QAction(it.key(), parent);
+            QAction* action = new QAction(key, parent);
             action->setData(value);
 
             parent->addAction(action);
@@ -93,7 +123,33 @@ QMenu* JsonMenu::build(QMenu* parent, const QJsonObject& object)
         }
     }
 
-    return parent;
+    return true;
+}
+
+bool JsonMenu::buildConfig(const QJsonObject& object)
+{
+    for (QJsonObject::const_iterator it = object.begin(); it != object.end(); ++it) {
+        QJsonValue value = it.value();
+        QString    key   = it.key();
+
+        if (m_cfg.contains(key) && !value.isNull()) {
+            QVariant& pref  = m_cfg[key];
+            if (pref.type() == QVariant::Bool) {
+                pref.setValue(value.toBool());
+            }
+            if (pref.type() == QVariant::Int) {
+                pref.setValue(value.toInt());
+            }
+            if (pref.type() == QVariant::Double) {
+                pref.setValue(value.toDouble());
+            }
+            if (pref.type() == QVariant::String) {
+                pref.setValue(value.toString());
+            }
+            qDebug() << pref;
+        }
+    }
+    return true;
 }
 
 void JsonMenu::addQuit()
