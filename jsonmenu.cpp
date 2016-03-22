@@ -57,7 +57,7 @@ QMenu* JsonMenu::build(const QString& menuFile)
     return m_trayMenu;
 }
 
-QMenu* JsonMenu::build(QMenu* parent, QJsonObject& object)
+QMenu* JsonMenu::build(QMenu* parent, const QJsonObject& object)
 {
     if (!parent) return NULL;
 

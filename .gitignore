@@ -34,5 +34,8 @@ Makefile*
 *.qmlproject.user.*
 
 # Custom
+.DS_Store
+
 build/
 *.json
+

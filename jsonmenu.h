@@ -15,7 +15,7 @@ public:
     ~JsonMenu();
 
     QMenu*  build(const QString& menuFile);
-    QMenu*  build(QMenu* parent, QJsonObject& object);
+    QMenu*  build(QMenu* parent, const QJsonObject& object);
 
 protected:
     void    addQuit();
