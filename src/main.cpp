@@ -10,8 +10,8 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    // hideDockIcon();
 
+    // Set PWD to App Directory
     QString appPath = QFileInfo(argv[0]).absolutePath();
     QDir::setCurrent(appPath);
 

@@ -1,6 +1,9 @@
 #include "jsonmenu.h"
 
 #include <QApplication>
+#include <QMessageBox>
+#include <QClipboard>
+
 #include <QAction>
 #include <QFile>
 
@@ -9,7 +12,6 @@
 #include <QJsonArray>
 #include <QJsonValue>
 
-#include <QClipboard>
 #include <QTimer>
 #include <QTime>
 
@@ -25,8 +27,7 @@ JsonMenu::JsonMenu(QObject *parent)
     m_timer = new QTimer(this);
     m_timer->setSingleShot(true);
 
-    m_app   = QApplication::instance();
-
+    m_app = QApplication::instance();
     connect(m_timer, SIGNAL(timeout()), this, SLOT(clearClipboard()));
 }
 
@@ -47,10 +48,24 @@ QMenu* JsonMenu::build(const QString& menuFile)
     QFile jsonFile(menuFile);
     if (jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QByteArray jsonBytes  = jsonFile.readAll();
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes);
-        QJsonObject jsonRoot  = jsonDoc.object();
+        QJsonParseError  parseError;
 
-        build(m_trayMenu, jsonRoot);
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes, &parseError);
+
+        if (parseError.error == QJsonParseError::NoError) {
+            QJsonObject jsonRoot = jsonDoc.object();
+            build(m_trayMenu, jsonRoot);
+        } else {
+            long lines;
+
+            QString errline = getErrorLine(jsonBytes, parseError.offset, lines);
+            QString errmsg  = parseError.errorString();
+
+            errline = errline.trimmed();
+            QString errMsg = QString("%1\nLine %2 - %3").arg(errline).arg(lines).arg(errmsg);
+
+            QMessageBox::warning(NULL, tr("Parse Error"), errMsg);
+        }
     }
 
     addQuit();
@@ -92,6 +107,31 @@ void JsonMenu::addQuit()
     m_trayMenu->addSeparator();
     m_trayMenu->addAction(clearAction);
     m_trayMenu->addAction(quitAction);
+}
+
+QString JsonMenu::getErrorLine(const QByteArray& data, long offset, long& line)
+{
+    QTextStream reader(data);
+
+    long lines  = 0;
+    long bcount = 0;
+
+    QString errline;
+    while(!reader.atEnd()) {
+        QString buffer;
+        buffer  = reader.readLine();
+        bcount += (buffer.length() + 1);
+
+        if (bcount >= offset) {
+            break;
+        }
+
+        errline = buffer;
+        lines++;
+    }
+
+    line = lines;
+    return errline;
 }
 
 void JsonMenu::clearClipboard()

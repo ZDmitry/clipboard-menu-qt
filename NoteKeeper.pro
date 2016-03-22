@@ -2,22 +2,19 @@ QT += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = NoteKeeper
+TARGET   = NoteKeeper
 TEMPLATE = app
 
 SOURCES += \
-    main.cpp \
-    jsonmenu.cpp
+    $$PWD/src/main.cpp \
+    $$PWD/src/jsonmenu.cpp
 
 HEADERS += \
-    jsonmenu.h
+    $$PWD/src/jsonmenu.h
 
 RESOURCES += \
     resources.qrc
 
-DISTFILES += \
-    menu.json
-
 mac {
-    QMAKE_INFO_PLIST  += $$PWD/Info.plist
+    QMAKE_INFO_PLIST  += $$PWD/res/Info.plist
 }

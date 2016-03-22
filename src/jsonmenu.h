@@ -14,22 +14,22 @@ public:
     JsonMenu(QObject *parent = 0);
     ~JsonMenu();
 
-    QMenu*  build(const QString& menuFile);
-    QMenu*  build(QMenu* parent, const QJsonObject& object);
+    QMenu*   build(const QString& menuFile);
+    QMenu*   build(QMenu* parent, const QJsonObject& object);
 
 protected:
-    void    addQuit();
-
+    void     addQuit();
+    QString  getErrorLine(const QByteArray& data, long offset, long& line);
 
 protected slots:
-    void    copyClipboard();
-    void    clearClipboard();
+    void     copyClipboard();
+    void     clearClipboard();
 
 
 private:
-    QMenu*  m_trayMenu;
-    QTimer* m_timer;
-    QTime*  m_elapsed;
+    QMenu*   m_trayMenu;
+    QTimer*  m_timer;
+    QTime*   m_elapsed;
 
     QCoreApplication*  m_app;
 };
