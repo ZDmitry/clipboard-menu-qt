@@ -6,6 +6,8 @@
 
 #include "jsonmenu.h"
 
+#define  DEF_MENU_JSON  "menu.json"
+
 
 int main(int argc, char *argv[])
 {
@@ -21,10 +23,10 @@ int main(int argc, char *argv[])
     QStringList args = app.arguments();
     args.removeFirst();
 
-    QString menuFile = "menu.json";
+    QString menuFile = DEF_MENU_JSON;
     for(int i = 1; i < argc; i++) {
         QString arg( argv[i] );
-        if ( arg == "--menu" && (i+1) <= argc ) {
+        if ( (arg == "--menu" || arg == "-m" ) && (i+1) <= argc ) {
             menuFile = QFileInfo(argv[++i]).absoluteFilePath();
         }
     }
