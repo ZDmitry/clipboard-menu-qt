@@ -18,8 +18,19 @@ int main(int argc, char *argv[])
     QIcon trayIcon(":/images/clipboard.png");
     app.setWindowIcon(trayIcon);
 
+    QStringList args = app.arguments();
+    args.removeFirst();
+
+    QString menuFile = "menu.json";
+    for(int i = 1; i < argc; i++) {
+        QString arg( argv[i] );
+        if ( arg == "--menu" && (i+1) <= argc ) {
+            menuFile = QFileInfo(argv[++i]).absoluteFilePath();
+        }
+    }
+
     JsonMenu menu;
-    QMenu* trayMenu = menu.parse("menu.json");
+    QMenu* trayMenu = menu.parse(menuFile);
 
     QSystemTrayIcon systray(trayIcon);
     systray.setContextMenu(trayMenu);

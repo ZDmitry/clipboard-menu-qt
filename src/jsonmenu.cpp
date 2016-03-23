@@ -45,6 +45,8 @@ JsonMenu::~JsonMenu()
 
 QMenu* JsonMenu::parse(const QString& menuFile)
 {
+    QString appName = m_app->applicationName();
+
     if (m_trayMenu) {
         delete m_trayMenu;
     }
@@ -66,15 +68,19 @@ QMenu* JsonMenu::parse(const QString& menuFile)
 
             QString errline = getErrorLine(jsonBytes, parseError.offset, lines);
             QString errmsg  = parseError.errorString();
-            QString appName = m_app->applicationName();
 
             errline = errline.trimmed();
 
-            QString errMsg   = QString("%1\nLine %2 - %3").arg(errline).arg(lines).arg(errmsg);
-            QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Parse Error"));
+            QString errMsg   = QString("%1\n" + tr("Line") + " %2 - %3").arg(errline).arg(lines).arg(errmsg);
+            QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Parse error"));
 
             QMessageBox::warning(NULL, errTitle, errMsg);
         }
+    } else {
+        QString errTitle = QString("%1 - %2").arg(appName).arg(tr("File open error"));
+        QString errMsg   = QString(tr("Can not open file") + ":\n\"%1\"").arg(menuFile);
+        QMessageBox::warning(NULL, errTitle, errMsg);
+        // exit(1);
     }
 
     addQuit();
