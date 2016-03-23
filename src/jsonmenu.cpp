@@ -6,6 +6,10 @@
 
 #include <QAction>
 #include <QFile>
+#include <QUrl>
+
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -35,6 +39,8 @@ JsonMenu::JsonMenu(QObject *parent)
 
     m_cfg["secure"]  = true;
     m_cfg["timeout"] = DEF_TIMEOUT;
+
+    connect(&m_netman, SIGNAL(finished(QNetworkReply*)), this, SLOT(jsonReceived(QNetworkReply*)));
 }
 
 JsonMenu::~JsonMenu()
@@ -56,34 +62,40 @@ QMenu* JsonMenu::parse(const QString& menuFile)
     QFile jsonFile(menuFile);
     if (jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QByteArray jsonBytes  = jsonFile.readAll();
-        QJsonParseError  parseError;
-
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes, &parseError);
-
-        if (parseError.error == QJsonParseError::NoError) {
-            QJsonObject jsonRoot = jsonDoc.object();
-            parse(m_trayMenu, jsonRoot);
-        } else {
-            long lines;
-
-            QString errline = getErrorLine(jsonBytes, parseError.offset, lines);
-            QString errmsg  = parseError.errorString();
-
-            errline = errline.trimmed();
-
-            QString errMsg   = QString("%1\n" + tr("Line") + " %2 - %3").arg(errline).arg(lines).arg(errmsg);
-            QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Parse error"));
-
-            QMessageBox::warning(NULL, errTitle, errMsg);
-        }
+        parseJson(jsonBytes);
     } else {
         QString errTitle = QString("%1 - %2").arg(appName).arg(tr("File open error"));
         QString errMsg   = QString(tr("Can not open file") + ":\n\"%1\"").arg(menuFile);
+
         QMessageBox::warning(NULL, errTitle, errMsg);
-        // exit(1);
+        exit(1);
     }
 
-    addQuit();
+    return m_trayMenu;
+}
+
+QMenu* JsonMenu::parseUrl(const QUrl& remoteJson)
+{
+    QString appName = m_app->applicationName();
+
+    if (m_trayMenu) {
+        delete m_trayMenu;
+    }
+
+    m_trayMenu = new QMenu();
+
+    if (remoteJson.isValid()) {
+        // download
+        QNetworkRequest req(remoteJson);
+        m_netman.get(req);
+    } else {
+        QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Invalid url"));
+        QString errMsg   = QString(tr("Invalid url") + ":\n\"%1\"").arg(remoteJson.url());
+
+        QMessageBox::warning(NULL, errTitle, errMsg);
+        exit(1);
+    }
+
     return m_trayMenu;
 }
 
@@ -160,6 +172,36 @@ bool JsonMenu::buildConfig(const QJsonObject& object)
     return true;
 }
 
+void JsonMenu::parseJson(const QByteArray &jsonData)
+{
+    Q_ASSERT(m_trayMenu);
+
+    QString appName = m_app->applicationName();
+
+    QJsonParseError  parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+
+    if (parseError.error == QJsonParseError::NoError) {
+        QJsonObject jsonRoot = jsonDoc.object();
+        parse(m_trayMenu, jsonRoot);
+    } else {
+        long lines;
+
+        QString errline = getErrorLine(jsonData, parseError.offset, lines);
+        QString errmsg  = parseError.errorString();
+
+        errline = errline.trimmed();
+
+        QString errMsg   = QString("%1\n" + tr("Line") + " %2 - %3").arg(errline).arg(lines).arg(errmsg);
+        QString errTitle = QString("%1 - %2").arg(appName).arg(tr("Parse error"));
+
+        QMessageBox::warning(NULL, errTitle, errMsg);
+        exit(1);
+    }
+
+    addQuit();
+}
+
 void JsonMenu::addQuit()
 {
     QAction* quitAction = new QAction(QObject::tr("&Quit"), m_trayMenu);
@@ -203,6 +245,36 @@ void JsonMenu::clearClipboard()
     QClipboard* clipboard = QApplication::clipboard();
     if (!!clipboard) {
         clipboard->clear();
+    }
+}
+
+void JsonMenu::jsonReceived(QNetworkReply* res)
+{
+    QString appName = m_app->applicationName();
+
+    QString errTitle = QString("%1 - %2").arg(appName).arg(tr("File download error"));
+    QString errMsg   = QString(tr("Can not download file") + ":\n\"%1\"");
+
+    if (res && res->error() == QNetworkReply::NoError) {
+        int       statusCode = res->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        QVariant contentType = res->header(QNetworkRequest::ContentTypeHeader);
+        QVariant redirectUrl = res->header(QNetworkRequest::LocationHeader);
+
+        // if redirect - follow location
+        if ((statusCode == 301 || statusCode == 302) && redirectUrl.isValid()) {
+            QNetworkRequest req(redirectUrl.toUrl());
+            m_netman.get(req);
+        } else if (statusCode == 200) {
+            QByteArray jsonData = res->readAll();
+            parseJson(jsonData);
+        } else {
+            QString statusError = tr("Download failed with status: %1").arg(statusCode);
+            QMessageBox::warning(NULL, errTitle, errMsg.arg(statusError));
+            exit(1);
+        }
+    } else {
+        QMessageBox::warning(NULL, errTitle, errMsg.arg(res->errorString()));
+        exit(1);
     }
 }
 

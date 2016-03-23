@@ -7,7 +7,8 @@ Copied text will be available for paste within `5 sec`. You can disable timeout 
 ###### Command-line options
 
 Supported command-line options:
-- `--menu` or `-m` &lt;json_file_path&gt; - path to json menu (by default: `menu.json` from app directory).
+- `--file` or `-f` &lt;json_file_path&gt; - path to json menu (by default: `menu.json` from app directory).
+- `--url`  or `-u` &lt;remote__url&gt; - url to json menu.
 
 ###### Menu structure
 

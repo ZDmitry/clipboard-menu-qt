@@ -2,6 +2,7 @@
 
 #include <QSystemTrayIcon>
 #include <QFileInfo>
+#include <QUrl>
 #include <QDir>
 
 #include "jsonmenu.h"
@@ -23,16 +24,26 @@ int main(int argc, char *argv[])
     QStringList args = app.arguments();
     args.removeFirst();
 
+    QUrl remoteJson;
     QString menuFile = DEF_MENU_JSON;
     for(int i = 1; i < argc; i++) {
         QString arg( argv[i] );
-        if ( (arg == "--menu" || arg == "-m" ) && (i+1) <= argc ) {
+        if ( (arg == "--file" || arg == "-f" ) && (i+1) <= argc ) {
             menuFile = QFileInfo(argv[++i]).absoluteFilePath();
+        }
+        if ( (arg == "--url" || arg == "-u" ) && (i+1) <= argc ) {
+            remoteJson = QUrl(argv[++i], QUrl::StrictMode);
         }
     }
 
     JsonMenu menu;
-    QMenu* trayMenu = menu.parse(menuFile);
+    QMenu* trayMenu = NULL;
+
+    if (!remoteJson.isEmpty()) {
+        trayMenu = menu.parseUrl(remoteJson);
+    } else {
+        trayMenu = menu.parse(menuFile);
+    }
 
     QSystemTrayIcon systray(trayIcon);
     systray.setContextMenu(trayMenu);
