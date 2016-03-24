@@ -1,4 +1,4 @@
-# noteKeeper
+# clipboardMenu
 Simple cross-platform tray app for store clippings
 
 This application allow you to store clippings as menu items inside tiny tray app. Click action on the menu item will copy assigned text to clipboard.
